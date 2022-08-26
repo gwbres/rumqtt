@@ -1,7 +1,8 @@
 use std::io::{self, Read, Write};
+use std::pin::Pin;
 
 use crate::client::network::stream::NetworkStream;
-use futures::Poll;
+use futures::task::Poll;
 use serde_derive::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use tokio::io::{AsyncRead, AsyncWrite};
@@ -23,7 +24,7 @@ use crate::client::network::{generate_httpproxy_auth, resolve};
         sync::Arc,
     };
     use tokio::net::TcpStream;
-    use tokio::codec::{Decoder, Framed, LinesCodec};
+    use tokio_util::codec::{Decoder, Framed, LinesCodec};
     use tokio_rustls::{
         rustls::{internal::pemfile, ClientConfig, ClientSession},
         TlsConnector, TlsStream,
@@ -142,7 +143,7 @@ use crate::client::network::{generate_httpproxy_auth, resolve};
             port: u16,
             key: &[u8],
             expiry: i64,
-        ) -> impl Future<Item = TcpStream, Error = io::Error> {
+        ) -> impl Future<Output = ()> {
             let proxy_auth = generate_httpproxy_auth(id, key, expiry);
             let connect = format!(
                 "CONNECT {}:{} HTTP/1.1\r\nHost: {}:{}\r\nProxy-Authorization: {}\r\n\r\n",
@@ -175,7 +176,7 @@ use crate::client::network::{generate_httpproxy_auth, resolve};
                 })
         }
 
-        pub fn tcp_connect(&self, host: &str, port: u16) -> impl Future<Item = TcpStream, Error = io::Error> {
+        pub fn tcp_connect(&self, host: &str, port: u16) -> impl Future<Output = ()> {
             let addr = resolve(host, port);
             let addr = future::result(addr);
 
@@ -188,7 +189,7 @@ use crate::client::network::{generate_httpproxy_auth, resolve};
             mut self,
             host: &str,
             port: u16,
-        ) -> impl Future<Item = Framed<NetworkStream, MqttCodec>, Error = ConnectError> {
+        ) -> impl Future<Output = ()> {
             let tls_connector = self.create_stream();
             let host_tcp = host.to_owned();
             let http_proxy = self.http_proxy.clone();
@@ -299,13 +300,26 @@ impl Write for NetworkStream {
     }
 }
 
-impl AsyncRead for NetworkStream {}
+impl AsyncRead for NetworkStream {
+    fn poll_read(self: Pin<&mut Self>, _: &mut std::task::Context<'_>, _: &mut tokio::io::ReadBuf<'_>) -> Poll<Result<(), std::io::Error>> { 
+        todo!() 
+    }
+}
 impl AsyncWrite for NetworkStream {
-    fn shutdown(&mut self) -> Poll<(), io::Error> {
+    /*fn poll_shutdown(&mut self) -> Poll<(), io::Error> {
         match *self {
-            NetworkStream::Tcp(ref mut s) => s.shutdown(),
-            NetworkStream::Tls(ref mut s) => s.shutdown(),
+            NetworkStream::Tcp(ref mut s) => s.poll_shutdown(),
+            NetworkStream::Tls(ref mut s) => s.poll_shutdown(),
         }
+    }*/
+    fn poll_write(self: Pin<&mut Self>, _: &mut std::task::Context<'_>, _: &[u8]) -> Poll<Result<usize, std::io::Error>> { 
+        todo!() 
+    }
+    fn poll_flush(self: Pin<&mut Self>, _: &mut std::task::Context<'_>) -> Poll<Result<(), std::io::Error>> { 
+        todo!() 
+    }
+    fn poll_shutdown(self: Pin<&mut Self>, _: &mut std::task::Context<'_>) -> Poll<Result<(), std::io::Error>> {
+        todo!() 
     }
 }
 

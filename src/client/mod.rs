@@ -2,9 +2,10 @@
 use crate::error::{ClientError, ConnectError};
 use crate::MqttOptions;
 use crossbeam_channel;
-use futures::{sync::mpsc, Future, Sink};
+use futures::{channel::mpsc, Sink};
 use mqtt311::{PacketIdentifier, Publish, QoS, Subscribe, Unsubscribe, SubscribeTopic};
 use std::sync::Arc;
+use futures::SinkExt;
 
 #[doc(hidden)]
 pub mod connection;
@@ -123,7 +124,9 @@ impl MqttClient {
         };
 
         let tx = &mut self.request_tx;
-        tx.send(Request::Publish(publish)).wait()?;
+        //TODO POLL READY
+        tx.start_send(Request::Publish(publish))
+            .unwrap(); //TODO GBR
         Ok(())
     }
 
@@ -142,7 +145,9 @@ impl MqttClient {
         };
 
         let tx = &mut self.request_tx;
-        tx.send(Request::Subscribe(subscribe)).wait()?;
+        //TODO POLL READY
+        tx.start_send(Request::Subscribe(subscribe))
+            .unwrap(); //TODO GBR
         Ok(())
     }
 
@@ -157,7 +162,9 @@ impl MqttClient {
         };
 
         let tx = &mut self.request_tx;
-        tx.send(Request::Unsubscribe(unsubscribe)).wait()?;
+        //TODO POLL READY
+        tx.start_send(Request::Unsubscribe(unsubscribe))
+            .unwrap(); //TODO GBR
         Ok(())
     }
 
@@ -168,7 +175,9 @@ impl MqttClient {
     /// [Resume]: struct.MqttClient.html#method.resume
     pub fn pause(&mut self) -> Result<(), ClientError> {
         let tx = &mut self.command_tx;
-        tx.send(Command::Pause).wait()?;
+        //TODO POLL READY
+        tx.start_send(Command::Pause)
+            .unwrap(); //TODO GBR
         Ok(())
     }
 
@@ -176,7 +185,9 @@ impl MqttClient {
     /// resume network io
     pub fn resume(&mut self) -> Result<(), ClientError> {
         let tx = &mut self.command_tx;
-        tx.send(Command::Resume).wait()?;
+        //TODO POLL READY
+        tx.start_send(Command::Resume)
+            .unwrap(); //TODO GBR
         Ok(())
     }
 
@@ -184,7 +195,9 @@ impl MqttClient {
     /// the connection to the broker.
     pub fn shutdown(&mut self) -> Result<(), ClientError> {
         let tx = &mut self.request_tx;
-        tx.send(Request::Disconnect).wait()?;
+        //TODO POLL READY
+        tx.start_send(Request::Disconnect)
+            .unwrap(); //TODO GBR
         Ok(())
     }
 }

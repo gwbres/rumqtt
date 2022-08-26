@@ -1,6 +1,9 @@
-use futures::{Async, Poll, Stream};
+use futures::{//Async, TODO GBR
+    task::Poll, Stream};
 use std::collections::VecDeque;
 use std::iter::IntoIterator;
+
+use std::pin::Pin;
 
 pub trait Prepend: Stream {
     fn prependable(self) -> Prependable<Self>
@@ -47,13 +50,16 @@ where
     S: Stream,
 {
     type Item = <S as Stream>::Item;
-    type Error = <S as Stream>::Error;
+    //type Error = <S as Stream>::Error;
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
+    /*fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         if let Some(v) = self.items.pop_front() {
             Ok(Async::Ready(Some(v)))
         } else {
             self.stream.poll()
         }
+    }*/
+    fn poll_next(self: Pin<&mut Self>, _: &mut std::task::Context<'_>) -> Poll<std::option::Option<<Self as futures::Stream>::Item>> { 
+        todo!() 
     }
 }

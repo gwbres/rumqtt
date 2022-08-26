@@ -3,7 +3,7 @@
 use bytes::BytesMut;
 use mqtt311::{self, MqttRead, MqttWrite, Packet};
 use std::io::{self, Cursor, ErrorKind};
-use tokio::codec::{Decoder, Encoder};
+use tokio_util::codec::{Decoder, Encoder};
 
 /// Mqtt codec
 #[derive(Debug)]
@@ -62,8 +62,7 @@ impl Decoder for MqttCodec {
     }
 }
 
-impl Encoder for MqttCodec {
-    type Item = Packet;
+impl Encoder<Packet> for MqttCodec {
     type Error = io::Error;
 
     fn encode(&mut self, msg: Packet, buf: &mut BytesMut) -> io::Result<()> {
