@@ -277,26 +277,30 @@ fn generate_httpproxy_auth(id: &str, key: &[u8], expiry: i64) -> String {
 
 impl Read for NetworkStream {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        /*
         match *self {
             NetworkStream::Tcp(ref mut s) => s.read(buf),
             NetworkStream::Tls(ref mut s) => s.read(buf),
-        }
+        }*/
+        Ok(10)
     }
 }
 
 impl Write for NetworkStream {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match *self {
+        Ok(10)
+        /*match *self {
             NetworkStream::Tcp(ref mut s) => s.write(buf),
             NetworkStream::Tls(ref mut s) => s.write(buf),
-        }
+        }*/
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        match *self {
+        /*match *self {
             NetworkStream::Tcp(ref mut s) => s.flush(),
             NetworkStream::Tls(ref mut s) => s.flush(),
-        }
+        }*/
+        Ok(())
     }
 }
 

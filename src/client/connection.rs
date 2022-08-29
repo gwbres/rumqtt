@@ -22,6 +22,7 @@ use std::{cell::RefCell, rc::Rc, thread, time::Duration, io};
 use tokio_util::codec::Framed;
 use futures::{StreamExt, TryFutureExt, SinkExt};
 use tokio::runtime::Runtime;
+//use tokio_stream::StreamExt;
 
 //  NOTES: Don't use `wait` in eventloop thread even if you
 //         are ok with blocking code. It might cause deadlocks
@@ -117,7 +118,7 @@ impl Connection {
     /// the connection when `is_network_enabled` flag is set true
     fn connect_or_not(&mut self, mqtt_connect_future: impl Future<Output=()>) -> Result<(Runtime, Option<MqttFramed>), bool> {
         let mut rt = Runtime::new().unwrap();
-        let mqtt_connect_deadline = tokio::time::Timeout::new(mqtt_connect_future, self.mqttoptions.connection_timeout());
+        let mqtt_connect_deadline = tokio::time::timeout::new(self.mqttoptions.connection_timeout(), mqtt_connect_future);
 
         if !self.is_network_enabled {
             return Ok((rt, None));
@@ -271,14 +272,19 @@ impl Connection {
     /// Sends connection status on blocked connections status call in `run`
     /// TODO: Combine both
     fn handle_connection_error(&mut self, error: tokio::time::error::Error) {
-        let error = match error.into_inner() {
-            Some(e) => Err(e),
-            None => Err(ConnectError::Timeout),
+        let error: ConnectError = match error.is_shutdown() {
+            true => ConnectError::MqttConnectionRefused(0), // TODO GBR
+            false => {
+                match error.is_invalid() {
+                    true => ConnectError::MqttConnectionRefused(0), // TODO GBR
+                    false => ConnectionError::MqttConnectionRefused(0), // TODO GBR
+                }
+            },
         };
 
         // send connection error notification only the first time
         if let Some(connection_tx) = self.connection_tx.take() {
-            connection_tx.try_send(error).unwrap();
+            connection_tx.try_send(Err(error)).unwrap();
         }
     }
 
@@ -355,7 +361,8 @@ impl Connection {
             .and_then(move |packet| {
                 debug!("Incoming packet = {:?}", packet_info(&packet));
                 let reply = mqtt_state.borrow_mut().handle_incoming_mqtt_packet(packet);
-                future::result(reply)
+                reply
+                //future::result(reply)
             })
             .and_then(move |(notification, reply)| {
                 handle_notification_and_reply(&notification_tx, notification, reply)
@@ -405,7 +412,8 @@ impl Connection {
         request_stream.and_then(move |packet: Packet| {
             let mut mqtt_state = mqtt_state.borrow_mut();
             let o = mqtt_state.handle_outgoing_mqtt_packet(packet);
-            future::result(o)
+            //future::result(o)
+            o
         })
     }
 
